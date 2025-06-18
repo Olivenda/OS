@@ -1,7 +1,7 @@
-ENTRY(kernel_main)
+ENTRY(kernel_entry)
 SECTIONS {
-    . = 1M;
-    .text : { *(.text*) }
+    . = 0x1000;
+    .text : { *(.text.entry*) *(.text*) }
     .rodata : { *(.rodata*) }
     .data : { *(.data*) }
     .bss : { *(.bss*) *(COMMON) }
