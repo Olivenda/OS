@@ -1,9 +1,10 @@
 NASM=nasm
 CC=gcc
-CFLAGS=-m32 -ffreestanding -nostdlib -fno-builtin -fno-stack-protector
+CFLAGS_BASE=-m32 -ffreestanding -nostdlib -fno-builtin -fno-stack-protector
+CFLAGS_EXTRA=-fno-pie -no-pie
+CFLAGS=$(CFLAGS_BASE) $(CFLAGS_EXTRA)
 LD=ld
 LDFLAGS=-melf_i386 -T src/link.ld
-
 all: os-image
 
 bootloader.bin: src/bootloader.asm
@@ -13,13 +14,14 @@ kernel.o: src/kernel.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 kernel.bin: kernel.o src/link.ld
-	$(LD) $(LDFLAGS) kernel.o -o kernel.bin
+	$(LD) $(LDFLAGS) kernel.o -o kernel.elf
+	objcopy -O binary kernel.elf kernel.bin
 
 os-image: bootloader.bin kernel.bin
 	cat $^ > os-image
 
 run: os-image
-	qemu-system-i386 -drive format=raw,file=os-image
+	qemu-system-i386 -drive format=raw,file=os-image -nographic
 
 clean:
 	rm -f *.bin *.o os-image
