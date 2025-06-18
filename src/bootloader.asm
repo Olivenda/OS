@@ -48,7 +48,8 @@ init_pm:
     mov esp, 0x90000
 
     ; Jump to kernel loaded at 0x1000
-    call 0x1000
+    push dword 0x1000
+    ret
 
 hang:
     hlt
