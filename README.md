@@ -19,6 +19,10 @@ make run
 - `help` – show available commands
 - `ls` – list files in the in-memory file system
 - `cat <name>` – display a file's contents
+- `echo <text>` – print text to the console
+- `clear` – clear the screen
+- `halt` – halt the system
+- `reboot` – reboot the system
 
 # OS
 
@@ -29,6 +33,7 @@ Welcome to the **OS** repository. This project aims to build a small experimenta
 - Minimal boot sequence
 - Simple command-line interface
 - Modular design to add new components easily
+- Linux-like shell with commands such as `echo`, `clear` and `reboot`
 
 ## Getting Started
 

@@ -16,6 +16,12 @@ static inline uint8_t inb(uint16_t port) {
 }
 int strcmp(const char *a,const char *b){while(*a&&(*a==*b)){a++;b++;}return *(const unsigned char*)a-*(const unsigned char*)b;}
 int strncmp(const char *a,const char *b,size_t n){while(n && *a && (*a==*b)){a++;b++;n--;}if(n==0)return 0;return *(const unsigned char*)a-*(const unsigned char*)b;}
+size_t strlen(const char* s){size_t i=0;while(s[i])i++;return i;}
+
+void clear_screen(){
+    for(size_t i=0;i<80*25;i++)video[i]=((uint16_t)0x07<<8)|' ';
+    cursor=0;
+}
 
 void putchar(char c) {
     if (c == '\n') {
@@ -72,15 +78,36 @@ void shell() {
         print("$ ");
         input(buf, sizeof(buf));
         if (!buf[0]) continue;
-        if (!strcmp(buf, "help")) {
-            print("Commands: help ls cat\n");
-        } else if (!strcmp(buf, "ls")) {
+
+        char* cmd = buf;
+        char* arg = buf;
+        while (*arg && *arg != ' ') arg++;
+        if (*arg) { *arg++ = 0; while (*arg == ' ') arg++; }
+        else arg = NULL;
+
+        if (!strcmp(cmd, "help")) {
+            print("Commands: help ls cat echo clear halt reboot\n");
+        } else if (!strcmp(cmd, "ls")) {
             for (size_t i=0;i<file_count;i++) { print(files[i].name); print("\n"); }
-        } else if (!strncmp(buf, "cat ", 4)) {
-            const char* name = buf+4;
-            size_t i;
-            for (i=0;i<file_count;i++) if (!strcmp(name, files[i].name)) break;
-            if (i<file_count) print(files[i].data); else print("File not found\n");
+        } else if (!strcmp(cmd, "cat")) {
+            if (!arg || !*arg) { print("Usage: cat <name>\n"); }
+            else {
+                const char* name = arg;
+                size_t i;
+                for (i=0;i<file_count;i++) if (!strcmp(name, files[i].name)) break;
+                if (i<file_count) print(files[i].data); else print("File not found\n");
+            }
+        } else if (!strcmp(cmd, "echo")) {
+            if (arg) print(arg);
+            print("\n");
+        } else if (!strcmp(cmd, "clear")) {
+            clear_screen();
+        } else if (!strcmp(cmd, "halt")) {
+            print("Halting...\n");
+            for(;;) __asm__("hlt");
+        } else if (!strcmp(cmd, "reboot")) {
+            outb(0x64, 0xFE);
+            for(;;) __asm__("hlt");
         } else {
             print("Unknown command\n");
         }
