@@ -64,13 +64,41 @@ void input(char* buf, size_t n) {
     buf[i] = 0;
 }
 
-struct file { const char* name; const char* data; };
+struct file {
+    char name[16];
+    char data[512];
+};
+
+static struct file files[16];
+static size_t file_count = 0;
 
 static const char file_readme[] = "This is a simple file.\n";
-static const struct file files[] = {
-    {"README", file_readme},
-};
-static const size_t file_count = sizeof(files)/sizeof(files[0]);
+
+static void init_filesystem() {
+    for (size_t i = 0; i < 16; i++) {
+        files[i].name[0] = 0;
+        files[i].data[0] = 0;
+    }
+    files[0].name[0] = 'R';
+    files[0].name[1] = 'E';
+    files[0].name[2] = 'A';
+    files[0].name[3] = 'D';
+    files[0].name[4] = 'M';
+    files[0].name[5] = 'E';
+    files[0].name[6] = 0;
+    size_t i=0; while (file_readme[i]) { files[0].data[i] = file_readme[i]; i++; }
+    files[0].data[i] = 0;
+    file_count = 1;
+}
+
+static int find_file(const char* name) {
+    for (size_t i = 0; i < file_count; i++) {
+        size_t j = 0;
+        while (files[i].name[j] && name[j] && files[i].name[j] == name[j]) j++;
+        if (files[i].name[j] == 0 && name[j] == 0) return (int)i;
+    }
+    return -1;
+}
 
 void shell() {
     char buf[80];
@@ -86,20 +114,49 @@ void shell() {
         else arg = NULL;
 
         if (!strcmp(cmd, "help")) {
-            print("Commands: help ls cat echo clear halt reboot\n");
+            print("Commands: help ls cat echo clear halt reboot mkdir nano\n");
         } else if (!strcmp(cmd, "ls")) {
             for (size_t i=0;i<file_count;i++) { print(files[i].name); print("\n"); }
         } else if (!strcmp(cmd, "cat")) {
             if (!arg || !*arg) { print("Usage: cat <name>\n"); }
             else {
                 const char* name = arg;
-                size_t i;
-                for (i=0;i<file_count;i++) if (!strcmp(name, files[i].name)) break;
-                if (i<file_count) print(files[i].data); else print("File not found\n");
+                int idx = find_file(name);
+                if (idx >= 0) print(files[idx].data); else print("File not found\n");
             }
         } else if (!strcmp(cmd, "echo")) {
             if (arg) print(arg);
             print("\n");
+        } else if (!strcmp(cmd, "mkdir")) {
+            if (!arg || !*arg) { print("Usage: mkdir <name>\n"); }
+            else { print("Directory '"); print(arg); print("' created\n"); }
+        } else if (!strcmp(cmd, "nano")) {
+            if (!arg || !*arg) { print("Usage: nano <name>\n"); }
+            else {
+                int idx = find_file(arg);
+                if (idx < 0 && file_count < 16) {
+                    idx = (int)file_count++;
+                    size_t j = 0; while(arg[j] && j < 15) { files[idx].name[j] = arg[j]; j++; }
+                    files[idx].name[j] = 0;
+                    files[idx].data[0] = 0;
+                }
+                if (idx >= 0) {
+                    print("Enter text, empty line to finish:\n");
+                    char line[80];
+                    size_t pos = 0;
+                    while (1) {
+                        input(line, sizeof(line));
+                        if (!line[0]) break;
+                        size_t l = strlen(line);
+                        if (pos + l + 1 >= sizeof(files[idx].data)) break;
+                        for (size_t k=0;k<l;k++) files[idx].data[pos++] = line[k];
+                        files[idx].data[pos++] = '\n';
+                    }
+                    files[idx].data[pos] = 0;
+                } else {
+                    print("No space for new file\n");
+                }
+            }
         } else if (!strcmp(cmd, "clear")) {
             clear_screen();
         } else if (!strcmp(cmd, "halt")) {
@@ -118,4 +175,10 @@ void kernel_main() {
     print("\nSimple OS\nType 'help' for commands.\n");
     shell();
     for(;;);
+}
+
+__attribute__((section(".text.entry")))
+void kernel_entry() {
+    init_filesystem();
+    kernel_main();
 }
