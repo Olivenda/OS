@@ -1,10 +1,10 @@
-; Simple bootloader that loads the kernel
+; 64-bit bootloader that loads the kernel
 BITS 16
 ORG 0x7c00
 
 start:
     cli
-    mov ax, 0x0000
+    xor ax, ax
     mov ds, ax
     mov es, ax
     mov ss, ax
@@ -35,11 +35,11 @@ start:
     mov eax, cr0
     or eax, 1
     mov cr0, eax
-    jmp CODE_SEG:init_pm
+    jmp CODE32_SEL:init_pm
 
 [BITS 32]
 init_pm:
-    mov ax, DATA_SEG
+    mov ax, DATA32_SEL
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -47,14 +47,46 @@ init_pm:
     mov ss, ax
     mov esp, 0x90000
 
-    ; Jump to kernel loaded at 0x1000
-    push dword 0x1000
-    ret
+    call setup_paging
+
+    ; Enable PAE
+    mov eax, cr4
+    or eax, 0x20
+    mov cr4, eax
+
+    ; Load PML4 address
+    mov eax, PML4
+    mov cr3, eax
+
+    ; Enable long mode
+    mov ecx, 0xC0000080
+    rdmsr
+    or eax, 1 << 8
+    wrmsr
+
+    ; Enable paging
+    mov eax, cr0
+    or eax, 0x80000000
+    mov cr0, eax
+
+    jmp CODE64_SEL:long_mode
+
+[BITS 64]
+long_mode:
+    mov ax, DATA64_SEL
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov rsp, 0x90000
+
+    mov rax, 0x1000
+    jmp rax
 
 hang:
     hlt
     jmp hang
 
+[BITS 16]
 print_string:
     pusha
 .print_char:
@@ -79,23 +111,48 @@ enable_a20:
     out 0x92, al
     ret
 
-boot_msg db 'Booting...',0
+[BITS 32]
+setup_paging:
+    ; Set up identity-mapped 2MB page
+    mov dword [PD], 0x83
+    mov dword [PD+4], 0
+    mov eax, PD
+    or eax, 0x3
+    mov dword [PDPT], eax
+    mov dword [PDPT+4], 0
+    mov eax, PDPT
+    or eax, 0x3
+    mov dword [PML4], eax
+    mov dword [PML4+4], 0
+    ret
+
+boot_msg db 'Booting 64-bit...',0
 disk_msg db 'Disk error!',0
 BOOT_DRIVE db 0
 
-align 4
+align 16
 GDT:
     dq 0
-    dw 0xffff, 0x0000, 0x9A00, 0x00CF
-    dw 0xffff, 0x0000, 0x9200, 0x00CF
+    dq 0x00CF9A000000FFFF ; 32-bit code
+    dq 0x00CF92000000FFFF ; 32-bit data
+    dq 0x00AF9A000000FFFF ; 64-bit code
+    dq 0x00AF92000000FFFF ; 64-bit data
 GDT_END:
 
-CODE_SEG equ GDT - GDT + 0x08
-DATA_SEG equ GDT - GDT + 0x10
+CODE32_SEL equ GDT - $$ + 0x08
+DATA32_SEL equ GDT - $$ + 0x10
+CODE64_SEL equ GDT - $$ + 0x18
+DATA64_SEL equ GDT - $$ + 0x20
 
+align 4
 gdt_descriptor:
     dw GDT_END - GDT - 1
     dd GDT
+
+
+PML4 equ 0x2000
+PDPT equ 0x3000
+PD   equ 0x4000
 
 TIMES 510 - ($-$$) db 0
 DW 0xAA55
