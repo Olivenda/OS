@@ -9,7 +9,7 @@ This project contains a very small hobby operating system with a basic bootloade
 make
 ```
 
-This produces an `os-image` file which can be booted with an emulator such as `qemu-system-x86_64`:
+This produces an `os-image.iso` file which can be booted with an emulator such as `qemu-system-x86_64`:
 
 ```
 make run
@@ -46,7 +46,7 @@ make
 You can then run the resulting image with a virtual machine such as QEMU:
 
 ```bash
-qemu-system-x86_64 -kernel build/os-image
+qemu-system-x86_64 -cdrom os-image.iso
 ```
 
 ## Contributing
