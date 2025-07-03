@@ -16,6 +16,7 @@ make run
 ```
 
 ## Commands
+Nach dem Booten des Betriebssystems landest du in einer einfachen Shell. Dort kannst du die folgenden Befehle nutzen:
 - `help` – show available commands
 - `ls` – list files in the in-memory file system
 - `cat <name>` – display a file's contents
@@ -23,6 +24,8 @@ make run
 - `clear` – clear the screen
 - `halt` – halt the system
 - `reboot` – reboot the system
+
+Damit lassen sich Dateien anzeigen, Texte ausgeben, der Bildschirm leeren und das System anhalten oder neu starten.
 
 # OS
 
