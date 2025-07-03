@@ -3,6 +3,8 @@ CC=gcc
 CFLAGS_BASE=-m64 -ffreestanding -nostdlib -fno-builtin -fno-stack-protector
 CFLAGS_EXTRA=-fno-pie -no-pie
 CFLAGS=$(CFLAGS_BASE) $(CFLAGS_EXTRA)
+UEFI_CFLAGS=-I/usr/include/efi -I/usr/include/efi/x86_64 -fpic -mno-red-zone -fno-stack-protector -DEFI_FUNCTION_WRAPPER
+UEFI_LDFLAGS=-nostdlib -znocombreloc -T /usr/lib/elf_x86_64_efi.lds -shared -Bsymbolic -L/usr/lib -lefi -lgnuefi /usr/lib/crt0-efi-x86_64.o
 LD=ld
 LDFLAGS=-melf_x86_64 -T src/link.ld
 
@@ -14,6 +16,11 @@ all: $(ISO)
 bootloader.bin: src/bootloader.asm
 	$(NASM) -f bin $< -o $@
 
+bootx64.efi: src/uefi_boot.c
+	$(CC) $(UEFI_CFLAGS) -c $< -o uefi_boot.o
+	$(LD) $(UEFI_LDFLAGS) uefi_boot.o -o bootx64.so
+	objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel -j .rela -j .reloc -j .eh_frame -j .bss -j .rodata --target=efi-app-x86_64 bootx64.so $@
+
 kernel.o: src/kernel.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -24,15 +31,19 @@ kernel.bin: kernel.o src/link.ld
 os-image: bootloader.bin kernel.bin
 	cat $^ > $@
 
-$(ISO): os-image
-	mkdir -p $(ISO_DIR)
-	cp $< $(ISO_DIR)/boot.img
-	xorriso -as mkisofs -R -b boot.img -no-emul-boot -boot-load-size 4 -boot-info-table -o $@ $(ISO_DIR)
+$(ISO): os-image bootx64.efi
+	mkdir -p $(ISO_DIR)/EFI/BOOT
+	cp os-image $(ISO_DIR)/boot.img
+	cp bootx64.efi $(ISO_DIR)/EFI/BOOT/BOOTX64.EFI
+	xorriso -as mkisofs -R \
+	-b boot.img -no-emul-boot -boot-load-size 4 -boot-info-table \
+	-eltorito-alt-boot -e EFI/BOOT/BOOTX64.EFI -no-emul-boot \
+	-isohybrid-gpt-basdat -o $@ $(ISO_DIR)
 	rm -rf $(ISO_DIR)
 
 run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -nographic
 
 clean:
-	rm -f *.bin *.o os-image $(ISO)
+	rm -f *.bin *.o *.so bootx64.efi os-image $(ISO)
 	rm -rf $(ISO_DIR)
