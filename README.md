@@ -1,7 +1,7 @@
 
 # Simple OS
 
-This project contains a very small hobby operating system with a basic kernel and UEFI loader. The boot process switches the processor into 64‑bit long mode before jumping to the kernel. The kernel provides simple text output, keyboard input, a small in-memory file system and a minimal shell with a few commands.
+This project contains a very small hobby operating system with a basic kernel and UEFI loader. The boot process switches the processor into 64‑bit long mode before jumping to the kernel. The kernel provides simple text output, keyboard input, a tiny disk-backed file system and a minimal shell with a few commands.
 
 ## Building
 
@@ -18,12 +18,15 @@ make run
 ## Commands
 Nach dem Booten des Betriebssystems landest du in einer einfachen Shell. Dort kannst du die folgenden Befehle nutzen:
 - `help` – show available commands
-- `ls` – list files in the in-memory file system
+- `ls` – list files in the persistent file system
 - `cat <name>` – display a file's contents
 - `echo <text>` – print text to the console
 - `clear` – clear the screen
 - `halt` – halt the system
 - `reboot` – reboot the system
+- `mkdir <name>` – create a directory (demo only)
+- `sync` – manually write changes to disk
+- `nano <name>` – edit a file
 
 Damit lassen sich Dateien anzeigen, Texte ausgeben, der Bildschirm leeren und das System anhalten oder neu starten.
 
@@ -37,6 +40,7 @@ Welcome to the **OS** repository. This project aims to build a small experimenta
 - Simple command-line interface
 - Modular design to add new components easily
 - Linux-like shell with commands such as `echo`, `clear` and `reboot`
+- Simple persistent file system stored on disk
 
 ## Getting Started
 
