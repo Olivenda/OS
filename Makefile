@@ -1,4 +1,3 @@
-NASM=nasm
 CC=gcc
 CFLAGS_BASE=-m64 -ffreestanding -nostdlib -fno-builtin -fno-stack-protector
 CFLAGS_EXTRA=-fno-pie -no-pie
@@ -13,9 +12,6 @@ ISO_DIR=iso
 
 all: $(ISO)
 
-bootloader.bin: src/bootloader.asm
-	$(NASM) -f bin $< -o $@
-
 bootx64.efi: src/uefi_boot.c
 	$(CC) $(UEFI_CFLAGS) -c $< -o uefi_boot.o
 	$(LD) $(UEFI_LDFLAGS) uefi_boot.o -o bootx64.so
@@ -28,16 +24,12 @@ kernel.bin: kernel.o src/link.ld
 	$(LD) $(LDFLAGS) kernel.o -o kernel.elf
 	objcopy -O binary kernel.elf kernel.bin
 
-os-image: bootloader.bin kernel.bin
-	cat $^ > $@
-
-$(ISO): os-image bootx64.efi
+$(ISO): kernel.bin bootx64.efi
 	mkdir -p $(ISO_DIR)/EFI/BOOT
-	cp os-image $(ISO_DIR)/boot.img
 	cp bootx64.efi $(ISO_DIR)/EFI/BOOT/BOOTX64.EFI
+	cp kernel.bin $(ISO_DIR)/kernel.bin
 	xorriso -as mkisofs -R \
-	-b boot.img -no-emul-boot -boot-load-size 4 -boot-info-table \
-	-eltorito-alt-boot -e EFI/BOOT/BOOTX64.EFI -no-emul-boot \
+	-e EFI/BOOT/BOOTX64.EFI -no-emul-boot \
 	-isohybrid-gpt-basdat -o $@ $(ISO_DIR)
 	rm -rf $(ISO_DIR)
 
@@ -45,5 +37,5 @@ run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -nographic
 
 clean:
-	rm -f *.bin *.o *.so bootx64.efi os-image $(ISO)
+	rm -f *.bin *.o *.so bootx64.efi $(ISO)
 	rm -rf $(ISO_DIR)

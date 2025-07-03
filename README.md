@@ -1,7 +1,7 @@
 
 # Simple OS
 
-This project contains a very small hobby operating system with a basic bootloader and kernel. The bootloader now switches the processor into 64-bit long mode before jumping to the kernel. The kernel provides simple text output, keyboard input, a small in-memory file system and a minimal shell with a few commands.
+This project contains a very small hobby operating system with a basic kernel and UEFI loader. The boot process switches the processor into 64‑bit long mode before jumping to the kernel. The kernel provides simple text output, keyboard input, a small in-memory file system and a minimal shell with a few commands.
 
 ## Building
 
@@ -9,7 +9,7 @@ This project contains a very small hobby operating system with a basic bootloade
 make
 ```
 
-This produces an `os-image.iso` file which can be booted with an emulator such as `qemu-system-x86_64`:
+This produces an `os-image.iso` file which can be booted with an emulator such as `qemu-system-x86_64` using an UEFI firmware (for example `OVMF.fd`):
 
 ```
 make run
@@ -49,7 +49,13 @@ make
 You can then run the resulting image with a virtual machine such as QEMU:
 
 ```bash
-qemu-system-x86_64 -cdrom os-image.iso
+qemu-system-x86_64 -bios OVMF.fd -cdrom os-image.iso
+```
+
+To write the ISO to a USB drive for real hardware testing you can use the `install.sh` helper script. Provide the target device as parameter (e.g. `/dev/sdX`):
+
+```bash
+./install.sh /dev/sdX
 ```
 
 ## Contributing
