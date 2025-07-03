@@ -17,11 +17,14 @@ bootx64.efi: src/uefi_boot.c
 	$(LD) $(UEFI_LDFLAGS) uefi_boot.o -o bootx64.so
 	objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel -j .rela -j .reloc -j .eh_frame -j .bss -j .rodata --target=efi-app-x86_64 bootx64.so $@
 
-kernel.o: src/kernel.c
+KERNEL_SRC = src/kernel.c src/console.c src/ata.c src/filesystem.c src/shell.c src/string.c
+KERNEL_OBJS = $(KERNEL_SRC:.c=.o)
+
+%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-kernel.bin: kernel.o src/link.ld
-	$(LD) $(LDFLAGS) kernel.o -o kernel.elf
+kernel.bin: $(KERNEL_OBJS) src/link.ld
+	$(LD) $(LDFLAGS) $(KERNEL_OBJS) -o kernel.elf
 	objcopy -O binary kernel.elf kernel.bin
 
 $(ISO): kernel.bin bootx64.efi
