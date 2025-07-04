@@ -1,6 +1,8 @@
 #include "os.h"
 #include "io.h"
 
+static void gui(void);
+
 static void run_command(char* buf){
     char* cmd = buf;
     char* arg = buf;
@@ -9,7 +11,7 @@ static void run_command(char* buf){
     else arg=NULL;
 
     if(!strcmp(cmd,"help")){
-        print("Commands: help ls cat echo clear halt reboot mkdir nano sync exec\n");
+        print("Commands: help ls cat echo clear halt reboot mkdir nano sync exec gui\n");
     }else if(!strcmp(cmd,"ls")){
         for(size_t i=0;i<file_count;i++){ print(files[i].name); print("\n"); }
     }else if(!strcmp(cmd,"cat")){
@@ -50,6 +52,8 @@ static void run_command(char* buf){
     }else if(!strcmp(cmd,"exec")){
         if(!arg||!*arg){ print("Usage: exec <name>\n"); }
         else{ int idx=find_file(arg); if(idx>=0) exec_script(files[idx].data); else print("File not found\n"); }
+    }else if(!strcmp(cmd,"gui")){
+        gui();
     }else if(!strcmp(cmd,"clear")){
         clear_screen();
     }else if(!strcmp(cmd,"halt")){
@@ -69,6 +73,23 @@ void exec_script(const char* script){
             line[pos]=0; if(pos>0) run_command(line); pos=0; if(c==0) break; }
         else{ if(pos<sizeof(line)-1) line[pos++]=c; }
     }
+}
+
+static void gui(void){
+    clear_screen();
+    print("+--------------------------------------------------+\n");
+    print("|                Simple GUI Mode                  |\n");
+    print("|  Type commands below or 'exit' to return.       |\n");
+    print("+--------------------------------------------------+\n");
+    char line[80];
+    while(1){
+        print("> ");
+        input(line, sizeof(line));
+        if(!line[0]) continue;
+        if(!strcmp(line, "exit")) break;
+        run_command(line);
+    }
+    clear_screen();
 }
 
 void shell(void){

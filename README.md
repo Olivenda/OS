@@ -27,6 +27,7 @@ Nach dem Booten des Betriebssystems landest du in einer einfachen Shell. Dort ka
 - `mkdir <name>` – create a directory (demo only)
 - `sync` – manually write changes to disk
 - `nano <name>` – edit a file
+- `gui` – launch a simple text-based GUI (type `exit` to return)
 
 Damit lassen sich Dateien anzeigen, Texte ausgeben, der Bildschirm leeren und das System anhalten oder neu starten.
 
@@ -41,6 +42,7 @@ Welcome to the **OS** repository. This project aims to build a small experimenta
 - Modular design to add new components easily
 - Linux-like shell with commands such as `echo`, `clear` and `reboot`
 - Simple persistent file system stored on disk
+- Optional simple text-based GUI with a single command line
 
 ## Getting Started
 
